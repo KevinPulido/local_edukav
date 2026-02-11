@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__ . '/../../../../config.php');
+require_once(__DIR__ . '/../../../../../config.php');
 
 use local_edukav\service\faqs_service;
 

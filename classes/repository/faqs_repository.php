@@ -27,13 +27,10 @@ class faqs_repository {
         return $DB->insert_record('edukav_faqs', $record);
     }
 
-    public static function update(int $id, string $question, string $answer): bool {
+    public static function update(\stdClass $record): bool {
         global $DB;
 
-        $record = self::get_by_id($id);
-        $record->question = $question;
-        $record->answer   = $answer;
-        $record->modified = time();
+        debugging('ID recibido: ' . $record->id);
 
         return $DB->update_record('edukav_faqs', $record);
     }
