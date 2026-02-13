@@ -7,12 +7,12 @@ class contact_repository{
 
     public static function get_all():array{
         global $DB;
-        return $DB->get_records('edukav_contact', null, 'timecreated DESC');
+        return $DB->get_records('edukav_contacts', null, 'timecreated DESC');
     }
 
     public static function get_by_id(int $id){
         global $DB;
-        return $DB->get_record('edukav_contact', ['id' => $id], '*', MUST_EXIST);
+        return $DB->get_record('edukav_contacts', ['id' => $id], '*', MUST_EXIST);
     }
 
     public static function create(string $name,string $email,string $subject,string $message):int{
