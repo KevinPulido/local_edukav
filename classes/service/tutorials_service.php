@@ -10,7 +10,7 @@ use required_capability_exception;
 class tutorials_service {
 
     /**
-     * Crear FAQ
+     * Crear Tuturial
      * (público o con validaciones mínimas)
      */
     public static function create_tutorial(string $title, string $description, string $url): int {
@@ -65,7 +65,7 @@ class tutorials_service {
 
 
     /**
-     * Editar FAQ
+     * Editar Tutorial
      * (requiere permisos)
      */
     public static function update_tutorial(int $id, string $title, string $description,string $url): void {
@@ -97,7 +97,7 @@ class tutorials_service {
     }
 
     /**
-     * Eliminar FAQ
+     * Eliminar Tutorial
      * (requiere permisos)
      */
     public static function delete_tutorial(int $id): void {
