@@ -34,7 +34,7 @@ class contact_service{
     /**
      * Create Contact
      */
-    public static function create_contact():int{
+    public static function create_contact(string $name,string $email,string $subject, string $message):int{
         if(empty(trim($name)) || empty(trim($email)) || empty(trim($subject)) || empty(trim($message))){
             throw new \invalid_parameter_exception('Todos los campos son obligatorios');
         }

@@ -23,9 +23,9 @@
 
 require_once(__DIR__ . '/../../../../../config.php');
 
-use local_Edukav\service\contact_service;
+use local_edukav\service\contact_service;
 
-require_login();
+
 require_sesskey();
 
 $name = required_param('name',PARAM_TEXT);
