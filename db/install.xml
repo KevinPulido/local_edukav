@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <XMLDB PATH="local/edukav/db"
-       VERSION="2026021006"
+       VERSION="2026021009"
        COMMENT="Tablas del plugin local edukav">
 
     <TABLES>

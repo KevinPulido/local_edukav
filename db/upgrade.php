@@ -12,7 +12,7 @@ function xmldb_local_edukav_upgrade(int $oldversion): bool {
 
     $dbman = $DB->get_manager();
 
-    if ($oldversion < 2026021005) {
+    if ($oldversion < 2026021008) {
         $table = new xmldb_table('edukav_partners');
 
         if (!$dbman->table_exists($table)) {
@@ -31,7 +31,7 @@ function xmldb_local_edukav_upgrade(int $oldversion): bool {
             $dbman->create_table($table);
         }
 
-        upgrade_plugin_savepoint(true, 2026021006, 'local', 'edukav');
+        upgrade_plugin_savepoint(true, 2026021009, 'local', 'edukav');
     }
 
     return true;

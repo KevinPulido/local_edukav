@@ -208,4 +208,44 @@ class partners_service {
             return [];
         }
     }
+
+    public static function get_course_partner_branding_from_db(int $courseid): array {
+        global $DB;
+
+        try {
+
+            $partnerid = $DB->get_field(
+                'course_format_options',
+                'value',
+                [
+                    'courseid' => $courseid,
+                    'name' => 'partnerid'
+                ]
+            );
+
+            $partnerid = (int)$partnerid;
+
+            if ($partnerid <= 0) {
+                return [];
+            }
+
+            $partner = self::get_partner($partnerid);
+
+            if (!$partner) {
+                return [];
+            }
+
+            return [
+                'id' => (int)$partner->id,
+                'name' => (string)$partner->name,
+                'slug' => (string)$partner->slug,
+                'logo' => self::get_partner_logo_url((int)$partner->id),
+                'brand_color' => trim((string)$partner->brand_color),
+                'gradient' => self::build_partner_gradient((string)$partner->brand_color),
+            ];
+
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
 }
