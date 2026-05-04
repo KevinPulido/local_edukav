@@ -55,11 +55,81 @@ class partners_service {
         return strtolower($color);
     }
 
+    private static function hex_to_hsl(string $hex): array {
+        $hex = ltrim($hex, '#');
+
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        $r = hexdec(substr($hex, 0, 2)) / 255;
+        $g = hexdec(substr($hex, 2, 2)) / 255;
+        $b = hexdec(substr($hex, 4, 2)) / 255;
+
+        $max = max($r, $g, $b);
+        $min = min($r, $g, $b);
+        $l = ($max + $min) / 2;
+
+        if ($max === $min) {
+            $h = $s = 0;
+        } else {
+            $d = $max - $min;
+            $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
+
+            switch ($max) {
+                case $r: $h = ($g - $b) / $d + ($g < $b ? 6 : 0); break;
+                case $g: $h = ($b - $r) / $d + 2; break;
+                case $b: $h = ($r - $g) / $d + 4; break;
+            }
+
+            $h /= 6;
+        }
+
+        return [$h * 360, $s, $l];
+    }
+
+
+    private static function hsl_to_hex($h, $s, $l): string {
+        $h /= 360;
+
+        if ($s == 0) {
+            $r = $g = $b = $l;
+        } else {
+            $q = $l < 0.5 ? $l * (1 + $s) : $l + $s - $l * $s;
+            $p = 2 * $l - $q;
+
+            $r = self::hue_to_rgb($p, $q, $h + 1/3);
+            $g = self::hue_to_rgb($p, $q, $h);
+            $b = self::hue_to_rgb($p, $q, $h - 1/3);
+        }
+
+        return sprintf("#%02x%02x%02x", $r * 255, $g * 255, $b * 255);
+    }
+
+    private static function hue_to_rgb($p, $q, $t) {
+        if ($t < 0) $t += 1;
+        if ($t > 1) $t -= 1;
+        if ($t < 1/6) return $p + ($q - $p) * 6 * $t;
+        if ($t < 1/2) return $q;
+        if ($t < 2/3) return $p + ($q - $p) * (2/3 - $t) * 6;
+        return $p;
+    }
+
     public static function build_partner_gradient(?string $brandcolor): string {
         $brandcolor = self::normalize_color($brandcolor);
-        $endcolor = $brandcolor !== '' ? $brandcolor : '#a855f7';
+        $base = $brandcolor !== '' ? $brandcolor : '#a855f7';
 
-        return "linear-gradient(135deg, #f5f7fb 0%, #e6e9f5 35%, #c9c3f5 65%, {$endcolor} 100%)";
+        [$h, $s, $l] = self::hex_to_hsl($base);
+
+        // Subimos luminosidad progresivamente (clave)
+        $c1 = self::hsl_to_hex($h, $s, min(1, $l + 0.45));
+        $c2 = self::hsl_to_hex($h, $s, min(1, $l + 0.30));
+        $c3 = self::hsl_to_hex($h, $s, min(1, $l + 0.15));
+
+        // Gris neutro real
+        $gray = '#e5e7eb';
+
+        return "linear-gradient(135deg, {$gray} 0%, {$c1} 30%, {$c2} 60%, {$c3} 80%, {$base} 100%)";
     }
 
     private static function unique_slug(string $base, ?int $excludeid = null): string {
