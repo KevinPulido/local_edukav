@@ -129,7 +129,7 @@ class partners_service {
         // Gris neutro real
         $gray = '#e5e7eb';
 
-        return "linear-gradient(135deg, {$gray} 0%, {$c1} 30%, {$c2} 60%, {$c3} 80%, {$base} 100%)";
+        return "linear-gradient(135deg, {$c1} 30%, {$c2} 60%, {$c3} 80%, {$base} 100%)";
     }
 
     private static function unique_slug(string $base, ?int $excludeid = null): string {
