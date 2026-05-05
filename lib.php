@@ -30,8 +30,6 @@ function local_edukav_pluginfile(
         return false;
     }
 
-    require_login();
-
     $itemid = (int)array_shift($args);
     $filename = array_pop($args);
     $filepath = '/' . implode('/', $args) . '/';

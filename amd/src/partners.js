@@ -1,52 +1,45 @@
 define(['core/ajax'], function(Ajax) {
+    var started = false;
+    var observer = null;
 
-    function renderCard(target, data) {
+    function escapeAttribute(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function renderLogo(target, data) {
+        target.innerHTML = '';
         target.insertAdjacentHTML('beforeend', `
-            <img src="${data.logo}" class="rbt-partner-logo" title="${data.name}">
+            <img src="${escapeAttribute(data.logo)}" class="rbt-partner-logo" title="${escapeAttribute(data.name)}" alt="${escapeAttribute(data.name)}">
         `);
     }
 
-    function renderList(target, data) {
-        target.insertAdjacentHTML('beforeend', `
-            <img src="${data.logo}" class="rbt-partner-logo" title="${data.name}">
-        `);
-    }
-
-    function renderSummary(target, data) {
-        target.insertAdjacentHTML('beforeend', `
-            <img src="${data.logo}" class="rbt-partner-logo" title="${data.name}">
-        `);
-    }
-
-   function renderPartner(card, data) {
-        if (!data || !data.found) {
+    function renderPartner(card, data) {
+        if (!data || !data.found || !data.logo) {
             return;
         }
 
-        const cardtarget = card.querySelector('.partner-card');
+        var target = card.querySelector('.partner-card, .partner-list, .partner-summary');
 
-        if (cardtarget) {
-            renderCard(cardtarget, data);
-            return;
-        }
-
-        const listtarget = card.querySelector('.partner-list');
-
-        if (listtarget) {
-            renderList(listtarget, data);
-            return;
-        }
-
-        const summarytarget = card.querySelector('.partner-summary');
-
-        if (summarytarget) {
-            renderSummary(summarytarget, data);
+        if (target) {
+            renderLogo(target, data);
         }
     }
 
     function scanCards() {
+        var cards = [];
 
-        const cards = document.querySelectorAll('[data-course-id]');
+        document.querySelectorAll('.partner-card, .partner-list, .partner-summary').forEach(function(target) {
+            var card = target.closest('[data-course-id]');
+
+            if (card && cards.indexOf(card) === -1) {
+                cards.push(card);
+            }
+        });
 
         cards.forEach(function(card) {
 
@@ -54,7 +47,7 @@ define(['core/ajax'], function(Ajax) {
                 return;
             }
 
-            const courseid = parseInt(card.dataset.courseId, 10);
+            var courseid = parseInt(card.dataset.courseId, 10);
 
             if (!courseid) {
                 return;
@@ -72,13 +65,24 @@ define(['core/ajax'], function(Ajax) {
     }
 
     function init() {
+        if (started) {
+            scanCards();
+            return;
+        }
 
+        started = true;
         scanCards();
 
-        new MutationObserver(scanCards).observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        if (window.MutationObserver) {
+            observer = new MutationObserver(function() {
+                scanCards();
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        }
     }
 
     return {

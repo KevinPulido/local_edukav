@@ -6,7 +6,7 @@ require_once(__DIR__ . '/lib.php');
 use local_edukav\forms\partner_form;
 use local_edukav\service\partners_service;
 
-require_login();
+
 require_capability('moodle/site:config', context_system::instance());
 
 $action = optional_param('action', '', PARAM_ALPHA);
