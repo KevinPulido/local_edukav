@@ -1,4 +1,4 @@
-define(['core/log'], function(log) {
+define(['core/log'], function (log) {
     const ASSET_ROOT = (window.M && window.M.cfg && window.M.cfg.wwwroot)
         ? window.M.cfg.wwwroot + '/local/edukav/assets'
         : '/local/edukav/assets';
@@ -9,6 +9,18 @@ define(['core/log'], function(log) {
 
     const OPTIONS = {
         youtube: { noCookie: true },
+
+        controls: [
+            'play-large',
+            'play',
+            'progress',
+            'current-time',
+            'duration',
+            'mute',
+            'pip',
+            'fullscreen',
+        ],
+
         i18n: {
             quality: 'Calidad',
             speed: 'Velocidad',
