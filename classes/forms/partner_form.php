@@ -11,7 +11,6 @@ class partner_form extends \moodleform {
     protected function definition(): void {
         $mform = $this->_form;
         $currentlogo = $this->_customdata['currentlogo'] ?? '';
-        $gradientpreview = $this->_customdata['gradientpreview'] ?? '';
 
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
@@ -42,13 +41,6 @@ class partner_form extends \moodleform {
             'class' => 'edukav-brand-color-input',
         ]);
         $mform->setType('brand_color', PARAM_RAW_TRIMMED);
-        $mform->addElement('static', 'gradient_note', '', 'El degradado se genera automáticamente a partir del color principal.');
-        $mform->addElement('static', 'gradient_preview', 'Vista previa del degradado', html_writer::tag('div', '', [
-            'id' => 'id_brand_gradient_preview',
-            'class' => 'edukav-brand-gradient-preview',
-            'data-gradient' => $gradientpreview,
-            'style' => 'height:56px;border-radius:18px;background:' . s($gradientpreview ?: 'linear-gradient(135deg, #f5f7fb 0%, #e6e9f5 35%, #c9c3f5 65%, #a855f7 100%)') . ';box-shadow:0 10px 24px rgba(15,23,42,.12);margin-top:8px;',
-        ]));
 
         $mform->addElement('advcheckbox', 'visible', 'Visible');
         $mform->setType('visible', PARAM_BOOL);

@@ -48,18 +48,12 @@ file_prepare_standard_filemanager(
     $partneritemid
 );
 
-$formdata->gradientpreview = partners_service::build_partner_gradient($formdata->brand_color ?? '#a855f7');
-$form = new partner_form(null, ['data' => $formdata, 'currentlogo' => $formdata->currentlogo ?? '', 'gradientpreview' => $formdata->gradientpreview]);
+$form = new partner_form(null, ['data' => $formdata, 'currentlogo' => $formdata->currentlogo ?? '']);
 $form->set_data($formdata);
 
 $PAGE->requires->js_call_amd('local_edukav/brand_color_picker', 'init', [
     '#id_brand_color_text',
 ]);
-$PAGE->requires->js_call_amd('local_edukav/brand_gradient_preview', 'init', [
-    '#id_brand_color_text',
-    '#id_brand_gradient_preview',
-]);
-
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/local/edukav/partners.php'));
 }

@@ -272,7 +272,6 @@ class partners_service {
                 'slug' => (string)$partner->slug,
                 'logo' => self::get_partner_logo_url((int)$partner->id),
                 'brand_color' => trim((string)$partner->brand_color),
-                'gradient' => self::build_partner_gradient((string)$partner->brand_color),
             ];
         } catch (\Throwable $e) {
             return [];
@@ -311,7 +310,6 @@ class partners_service {
                 'slug' => (string)$partner->slug,
                 'logo' => self::get_partner_logo_url((int)$partner->id),
                 'brand_color' => trim((string)$partner->brand_color),
-                'gradient' => self::build_partner_gradient((string)$partner->brand_color),
             ];
 
         } catch (\Throwable $e) {
