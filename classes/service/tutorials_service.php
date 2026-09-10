@@ -114,4 +114,18 @@ class tutorials_service {
 
         tutorials_repository::delete($id);
     }
+
+    public static function get_tutorials(): array {
+        global $CFG;
+        require_once($CFG->dirroot . '/local/edukav/lib.php');
+
+        $tutorials = tutorials_repository::get_all();
+
+        foreach ($tutorials as $tutorial) {
+            $tutorial->video_id =
+                \local_edukav_extract_video_id($tutorial->url);
+        }
+
+        return array_values($tutorials);
+    }
 }

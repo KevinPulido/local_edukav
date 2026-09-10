@@ -9,6 +9,8 @@ define(['core/log'], function (log) {
 
     const OPTIONS = {
         youtube: { noCookie: true },
+        captions: { active: false, language: 'auto', update: false },
+        settings: ['quality', 'speed','captions'],
 
         controls: [
             'play-large',
@@ -16,12 +18,13 @@ define(['core/log'], function (log) {
             'progress',
             'current-time',
             'duration',
-            'mute',
+            'settings',
             'pip',
             'fullscreen',
         ],
 
         i18n: {
+            settings: 'Ajustes',
             quality: 'Calidad',
             speed: 'Velocidad',
             captions: 'Subtítulos',
@@ -80,7 +83,9 @@ define(['core/log'], function (log) {
                 return;
             }
 
-            new PlyrCtor(player, OPTIONS);
+            const instance = new PlyrCtor(player, OPTIONS);
+            // Start without captions even when a previous session enabled them.
+            instance.once('ready', () => instance.toggleCaptions(false));
             player.setAttribute('data-plyr-initialized', 'true');
         });
     };

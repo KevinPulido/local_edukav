@@ -73,3 +73,39 @@ function local_edukav_save_partner_logo(int $partnerid, int $draftitemid): void 
         ]
     );
 }
+
+
+/**
+ * Extract the YouTube video id from common URL formats.
+ *
+ * @param string|null $url
+ * @return string|null
+ */
+function local_edukav_extract_video_id(?string $url): ?string{
+    $url = trim((string)$url);
+    if ($url === '') {
+        return null;
+    }
+
+    $parts = parse_url($url);
+    if (!empty($parts['query'])) {
+        parse_str($parts['query'], $queryparams);
+        if (!empty($queryparams['v'])) {
+            return $queryparams['v'];
+        }
+    }
+
+    if (preg_match('~youtube\.com/embed/([^?&/]+)~i', $url, $matches)) {
+        return $matches[1];
+    }
+
+    if (preg_match('~youtube\.com/watch\?v=([^?&/]+)~i', $url, $matches)) {
+        return $matches[1];
+    }
+
+    if (preg_match('~youtu\.be/([^?&/]+)~i', $url, $matches)) {
+        return $matches[1];
+    }
+
+    return null;
+}
