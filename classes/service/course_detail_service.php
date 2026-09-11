@@ -8,9 +8,89 @@ use core_course_list_element;
 use moodle_url;
 
 /**
- * Provides public course detail data for the Edukav course detail page.
+ * Provides shared course card data and the public course detail.
  */
 class course_detail_service {
+
+
+    /** Return shared card data without loading the course syllabus. */
+    public static function get_course_card(int $courseid): array {
+        global $CFG, $DB, $USER, $OUTPUT;
+
+        require_once($CFG->dirroot . '/course/lib.php');
+        $course = get_course($courseid);
+        $context = context_course::instance($courseid);
+        $courseformat = course_get_format($courseid);
+        $duration = '';
+        $level = '';
+        if (method_exists($courseformat, 'get_format_option')) {
+            $duration = trim((string) $courseformat->get_format_option('duration'));
+            $level = trim((string) $courseformat->get_format_option('level'));
+        }
+        if ($level === 'nolevelrequired') {
+            $level = '';
+        }
+        if ($level !== '' && get_string_manager()->string_exists('level:' . $level, 'format_edukav')) {
+            $level = get_string('level:' . $level, 'format_edukav');
+        }
+        $courseelement = new core_course_list_element($course);
+        $imageurl = '';
+        foreach ($courseelement->get_course_overviewfiles() as $file) {
+            if ($file->is_valid_image()) {
+                $imageurl = moodle_url::make_file_url(
+                    "$CFG->wwwroot/pluginfile.php",
+                    '/' . $file->get_contextid() . '/course/overviewfiles' .
+                        $file->get_filepath() . $file->get_filename()
+                )->out(false);
+                break;
+            }
+        }
+
+        $category = '';
+        if ($course->category) {
+            $categoryobject = \core_course_category::get($course->category, IGNORE_MISSING);
+            if ($categoryobject) {
+                $category = $categoryobject->get_formatted_name();
+            }
+        }
+
+        if ($imageurl === '') {
+            $imageurl = $OUTPUT->get_generated_image_for_id($courseid);
+        }
+        $paymentmethods = $DB->get_records_sql(
+            "SELECT e.id, e.cost
+               FROM {enrol} e
+              WHERE e.courseid = :courseid
+                AND e.enrol = 'edukav_payments'
+                AND e.status = 0
+           ORDER BY e.sortorder ASC, e.id ASC",
+            ['courseid' => $course->id], 0, 1
+        );
+        $paymentmethod = reset($paymentmethods);
+        $price = $paymentmethod ? (float) $paymentmethod->cost : 0.0;
+        $originalprice = $price > 0 ? round($price * 1.49, 2) : 0;
+        $discountpercent = $price > 0 && $originalprice > $price
+            ? (int) round((1 - ($price / $originalprice)) * 100)
+            : 0;
+
+        return [
+            'id' => $courseid,
+            'fullname' => format_string($course->fullname, true, ['context' => $context]),
+            'visible' => $course->visible,
+            'image' => $imageurl,
+            'category' => $category,
+            'startdate' => date('d M, Y', (int) $course->startdate),
+            'duration' => $duration,
+            'level' => $level,
+            'hasduration' => $duration !== '',
+            'haslevel' => $level !== '',
+            'price' => $price,
+            'isfree' => $price <= 0,
+            'originalprice' => $originalprice,
+            'discountpercent' => $discountpercent,
+            'isenrolled' => is_enrolled($context, $USER),
+        ];
+    }
 
     /**
      * Return the data that can be displayed before enrolment.
@@ -20,7 +100,7 @@ class course_detail_service {
      * @throws \moodle_exception
      */
     public static function get_course_detail(int $courseid): array {
-        global $CFG, $DB, $USER;
+        global $CFG;
 
         require_once($CFG->dirroot . '/course/lib.php');
         require_once($CFG->dirroot . '/local/edukav/classes/service/course_educators_service.php');
@@ -32,8 +112,7 @@ class course_detail_service {
 
         $context = context_course::instance($course->id);
         $courseformat = course_get_format($course->id);
-        $duration = trim((string) $courseformat->get_format_option('duration'));
-        $levelkey = trim((string) $courseformat->get_format_option('level'));
+        $card = self::get_course_card($courseid);
         $videotype = (string) $courseformat->get_format_option('banner_video_type');
         $videourl = null;
         $isvideofile = false;
@@ -56,48 +135,8 @@ class course_detail_service {
                 ? $courseformat->normalize_video_url($bannervideo)
                 : null;
         }
-        $level = $levelkey;
-        if ($levelkey !== '' && get_string_manager()->string_exists('level:' . $levelkey, 'format_edukav')) {
-            $level = get_string('level:' . $levelkey, 'format_edukav');
-        }
-
-        $courseelement = new core_course_list_element($course);
-        $imageurl = '';
-        foreach ($courseelement->get_course_overviewfiles() as $file) {
-            if ($file->is_valid_image()) {
-                $imageurl = moodle_url::make_file_url(
-                    "$CFG->wwwroot/pluginfile.php",
-                    '/' . $file->get_contextid() . '/course/overviewfiles' .
-                        $file->get_filepath() . $file->get_filename()
-                )->out(false);
-                break;
-            }
-        }
-
-        $category = '';
-        if ($course->category) {
-            $categoryobject = \core_course_category::get($course->category, IGNORE_MISSING);
-            if ($categoryobject) {
-                $category = $categoryobject->get_formatted_name();
-            }
-        }
-
         $educators = course_educators_service::get_course_educators($course->id);
         $teacher = reset($educators);
-
-        $price = (float) $DB->get_field_sql(
-            "SELECT e.cost
-               FROM {enrol} e
-              WHERE e.courseid = :courseid
-                AND e.enrol = 'edukav_payments'
-                AND e.status = 0
-           ORDER BY e.sortorder ASC",
-            ['courseid' => $course->id]
-        );
-        $originalprice = $price > 0 ? round($price * 1.49, 2) : 0;
-        $discountpercent = $price > 0 && $originalprice > $price
-            ? (int) round((1 - ($price / $originalprice)) * 100)
-            : 0;
 
         $sections = [];
         $modinfo = get_fast_modinfo($course->id);
@@ -128,32 +167,18 @@ class course_detail_service {
             ];
         }
 
-        return [
-            'id' => $course->id,
-            'fullname' => format_string($course->fullname, true, ['context' => $context]),
+        return array_merge($card, [
             'summary' => format_text($course->summary, FORMAT_HTML, ['context' => $context]),
-            'category' => $category,
-            'image' => $imageurl,
             'video' => $videourl,
             'hasvideo' => !empty($videourl),
             'isvideofile' => $isvideofile,
-            'startdate' => date("d M, Y", (int)$course->startdate),
-            'duration' => $duration,
-            'level' => $level,
-            'hasduration' => $duration !== '',
-            'haslevel' => $level !== '',
-            'price' => $price,
-            'isfree' => $price <= 0,
-            'originalprice' => $originalprice,
-            'discountpercent' => $discountpercent,
-            'isenrolled' => is_enrolled($context, $USER),
             'hasteacher' => !empty($teacher),
             'teachername' => $teacher['name'] ?? '',
             'teacherprofileurl' => $teacher['profileurl'] ?? '',
             'teacherimage' => $teacher['image'] ?? '',
             'sections' => $sections,
             'hassections' => !empty($sections),
-        ];
+        ]);
     }
 
     /**
