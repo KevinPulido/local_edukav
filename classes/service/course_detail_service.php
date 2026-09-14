@@ -147,7 +147,9 @@ class course_detail_service {
 
             $activities = [];
             foreach ($modinfo->get_cms() as $cm) {
-                if ((int) $cm->sectionnum !== (int) $section->section || !$cm->visibleoncoursepage) {
+                if ((int) $cm->sectionnum !== (int) $section->section ||
+                    !$cm->visibleoncoursepage ||
+                    $cm->deletioninprogress) {
                     continue;
                 }
 
