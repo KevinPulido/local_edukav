@@ -41,3 +41,4 @@ $string['confirm_delete'] = '¿Seguro que quieres eliminar este recurso?';
 $string['status'] = 'Estado';
 $string['visible'] = 'Visible';
 $string['hidden'] = 'Oculto';
+$string['nostudentparticipants'] = 'No hay participantes disponibles en este curso.';

@@ -149,3 +149,18 @@ function local_edukav_extend_navigation_course($navigation, $course, $context): 
         'local_edukav_course_library'
     );
 }
+
+/**
+ * Return the participants page available to the current user.
+ *
+ * @param stdClass $course
+ * @param context_course $context
+ * @return moodle_url
+ */
+function local_edukav_get_course_participants_url(stdClass $course, context_course $context): moodle_url {
+    if (has_capability('moodle/course:enrolreview', $context)) {
+        return new moodle_url('/user/index.php', ['id' => $course->id]);
+    }
+
+    return new moodle_url('/local/edukav/participants.php', ['id' => $course->id]);
+}

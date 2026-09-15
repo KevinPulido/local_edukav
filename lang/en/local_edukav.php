@@ -41,3 +41,4 @@ $string['confirm_delete'] = 'Are you sure you want to delete this resource?';
 $string['status'] = 'Status';
 $string['visible'] = 'Visible';
 $string['hidden'] = 'Hidden';
+$string['nostudentparticipants'] = 'There are no participants available in this course.';
