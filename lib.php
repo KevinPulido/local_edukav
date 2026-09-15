@@ -22,11 +22,40 @@ function local_edukav_pluginfile(
     bool $forcedownload,
     array $options = []
 ): bool {
-    if ($context->contextlevel !== CONTEXT_SYSTEM) {
-        return false;
+    $libraryareas = ['course_library_resource', 'course_library_cover'];
+    if ($context->contextlevel === CONTEXT_COURSE && in_array($filearea, $libraryareas, true)) {
+        $itemid = (int)array_shift($args);
+        $resource = \local_edukav\repository\course_library_repository::get_by_id($itemid);
+        if (!$resource || (int)$resource->courseid !== (int)$context->instanceid) {
+            return false;
+        }
+        $course = get_course((int)$resource->courseid);
+        require_login($course);
+        if (empty($resource->visible) &&
+                !has_capability('local/edukav:managecourselibrary', $context)) {
+            return false;
+        }
+        $filename = array_pop($args);
+        $filepath = '/' . implode('/', $args) . '/';
+        if ($filepath === '//') {
+            $filepath = '/';
+        }
+        $file = get_file_storage()->get_file(
+            $context->id,
+            'local_edukav',
+            $filearea,
+            $itemid,
+            $filepath,
+            $filename
+        );
+        if (!$file || $file->is_directory()) {
+            return false;
+        }
+        send_stored_file($file, 86400, 0, $filearea === 'course_library_resource', $options);
+        return true;
     }
 
-    if ($filearea !== 'partner_logo') {
+    if ($context->contextlevel !== CONTEXT_SYSTEM || $filearea !== 'partner_logo') {
         return false;
     }
 
@@ -108,4 +137,15 @@ function local_edukav_extract_video_id(?string $url): ?string{
     }
 
     return null;
+}
+
+/** Add the course library to the course navigation. */
+function local_edukav_extend_navigation_course($navigation, $course, $context): void {
+    $navigation->add(
+        get_string('course_library', 'local_edukav'),
+        new moodle_url('/local/edukav/library.php', ['courseid' => $course->id]),
+        navigation_node::TYPE_CUSTOM,
+        null,
+        'local_edukav_course_library'
+    );
 }

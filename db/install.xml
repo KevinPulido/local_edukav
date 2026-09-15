@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <XMLDB PATH="local/edukav/db"
-       VERSION="2026021009"
+       VERSION="2026091501"
        COMMENT="Tablas del plugin local edukav">
 
     <TABLES>
@@ -83,6 +83,35 @@
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
                 <KEY NAME="slug_uix" TYPE="unique" FIELDS="slug"/>
             </KEYS>
+        </TABLE>
+
+        <!-- Course library resources -->
+        <TABLE NAME="edukav_course_library" COMMENT="Resources assigned to each Edukav course library">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+                <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true"/>
+                <FIELD NAME="description" TYPE="text" NOTNULL="false"/>
+                <FIELD NAME="category" TYPE="char" LENGTH="100" NOTNULL="false"/>
+                <FIELD NAME="resourcetype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="document"/>
+                <FIELD NAME="level" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="basic"/>
+                <FIELD NAME="externalurl" TYPE="text" NOTNULL="false"/>
+                <FIELD NAME="featured" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="visible" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+                <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="modifiedby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="courseid_fk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="coursevisible_idx" UNIQUE="false" FIELDS="courseid, visible"/>
+                <INDEX NAME="coursetype_idx" UNIQUE="false" FIELDS="courseid, resourcetype"/>
+            </INDEXES>
         </TABLE>
 
     </TABLES>

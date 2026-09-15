@@ -34,5 +34,76 @@ function xmldb_local_edukav_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026021009, 'local', 'edukav');
     }
 
+    if ($oldversion < 2026091500) {
+        $table = new xmldb_table('edukav_course_library');
+
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('title', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
+            $table->add_field('description', XMLDB_TYPE_TEXT, null, null, null);
+            $table->add_field('category', XMLDB_TYPE_CHAR, '100', null, null);
+            $table->add_field('resourcetype', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'document');
+            $table->add_field('level', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'basic');
+            $table->add_field('externalurl', XMLDB_TYPE_TEXT, null, null, null);
+            $table->add_field('featured', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('visible', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+            $table->add_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('createdby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('modifiedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('courseid_fk', XMLDB_KEY_FOREIGN, ['courseid'], 'course', ['id']);
+            $table->add_index('coursevisible_idx', XMLDB_INDEX_NOTUNIQUE, ['courseid', 'visible']);
+            $table->add_index('coursetype_idx', XMLDB_INDEX_NOTUNIQUE, ['courseid', 'resourcetype']);
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091500, 'local', 'edukav');
+    }
+
+    if ($oldversion < 2026091501) {
+        $legacytable = new xmldb_table('edukav_library_resource');
+        if ($dbman->table_exists($legacytable)) {
+            $sortorders = [];
+            foreach ($DB->get_records('edukav_library_resource', null, 'courseid ASC, id ASC') as $legacy) {
+                $courseid = (int)$legacy->courseid;
+                if (!$DB->record_exists('course', ['id' => $courseid])) {
+                    continue;
+                }
+                $sortorders[$courseid] = ($sortorders[$courseid] ?? 0) + 10;
+                $externalurl = clean_param((string)($legacy->url ?? ''), PARAM_URL);
+                $duplicate = $DB->record_exists('edukav_course_library', [
+                    'courseid' => $courseid,
+                    'title' => (string)$legacy->title,
+                    'externalurl' => $externalurl,
+                ]);
+                if ($duplicate) {
+                    continue;
+                }
+                $DB->insert_record('edukav_course_library', (object)[
+                    'courseid' => $courseid,
+                    'title' => (string)$legacy->title,
+                    'description' => (string)($legacy->description ?? ''),
+                    'category' => (string)($legacy->category ?? ''),
+                    'resourcetype' => (string)($legacy->resourcetype ?? 'document'),
+                    'level' => (string)($legacy->level ?? 'basic'),
+                    'externalurl' => $externalurl,
+                    'featured' => empty($legacy->featured) ? 0 : 1,
+                    'visible' => empty($legacy->visible) ? 0 : 1,
+                    'sortorder' => $sortorders[$courseid],
+                    'createdby' => (int)($legacy->createdby ?? 0),
+                    'modifiedby' => (int)($legacy->createdby ?? 0),
+                    'timecreated' => (int)($legacy->timecreated ?? time()),
+                    'timemodified' => (int)($legacy->timemodified ?? time()),
+                ]);
+            }
+            $dbman->drop_table($legacytable);
+        }
+        upgrade_plugin_savepoint(true, 2026091501, 'local', 'edukav');
+    }
+
     return true;
 }
