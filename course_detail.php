@@ -7,13 +7,14 @@ defined('MOODLE_INTERNAL') || die();
 use local_edukav\service\course_detail_service;
 
 $courseid = required_param('id', PARAM_INT);
-
-// El detalle público está disponible únicamente para visitantes y usuarios invitado.
-if (isloggedin() && !isguestuser()) {
-    redirect(new moodle_url('/course/view.php', ['id' => $courseid]));
-}
-
 $course = get_course($courseid);
+$context = context_course::instance($course->id, MUST_EXIST);
+
+// Respeta las mismas reglas de visibilidad que la página de matrícula.
+if (!core_course_category::can_view_course_info($course) &&
+        !is_enrolled($context, $USER, '', true)) {
+    throw new moodle_exception('coursehidden', '', $CFG->wwwroot . '/');
+}
 
 $PAGE->set_url(new moodle_url('/local/edukav/course_detail.php', ['id' => $courseid]));
 // El frontpage construye el navbar desde el contexto del sitio. El detalle

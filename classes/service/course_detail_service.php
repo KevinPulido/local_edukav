@@ -68,10 +68,16 @@ class course_detail_service {
         );
         $paymentmethod = reset($paymentmethods);
         $price = $paymentmethod ? (float) $paymentmethod->cost : 0.0;
+        if ($paymentmethod && $price <= 0) {
+            $price = (float) get_config('enrol_edukav_payments', 'cost');
+        }
         $originalprice = $price > 0 ? round($price * 1.49, 2) : 0;
         $discountpercent = $price > 0 && $originalprice > $price
             ? (int) round((1 - ($price / $originalprice)) * 100)
             : 0;
+
+        $isauthenticated = isloggedin() && !isguestuser();
+        $isenrolled = $isauthenticated && is_enrolled($context, $USER, '', true);
 
         return [
             'id' => $courseid,
@@ -88,7 +94,10 @@ class course_detail_service {
             'isfree' => $price <= 0,
             'originalprice' => $originalprice,
             'discountpercent' => $discountpercent,
-            'isenrolled' => is_enrolled($context, $USER),
+            'isloggedin' => $isauthenticated,
+            'isenrolled' => $isenrolled,
+            'courseurl' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
+            'enrolurl' => (new moodle_url('/enrol/index.php', ['id' => $courseid]))->out(false),
         ];
     }
 
@@ -113,6 +122,7 @@ class course_detail_service {
         $context = context_course::instance($course->id);
         $courseformat = course_get_format($course->id);
         $card = self::get_course_card($courseid);
+        $isenrolled = !empty($card['isenrolled']);
         $videotype = (string) $courseformat->get_format_option('banner_video_type');
         $videourl = null;
         $isvideofile = false;
@@ -156,8 +166,8 @@ class course_detail_service {
                 $activities[] = [
                     'name' => $cm->get_formatted_name(),
                     'modname' => get_string('modulename', 'mod_' . $cm->modname),
-                    'url' => isloggedin() && $cm->uservisible ? $cm->url->out(false) : '',
-                    'locked' => !isloggedin() || !$cm->uservisible,
+                    'url' => $isenrolled && $cm->uservisible ? $cm->url->out(false) : '',
+                    'locked' => !$isenrolled || !$cm->uservisible,
                 ];
             }
 
