@@ -105,5 +105,96 @@ function xmldb_local_edukav_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091501, 'local', 'edukav');
     }
 
+    if ($oldversion < 2026091511) {
+        $categorytable = new xmldb_table('edukav_faq_categories');
+        if (!$dbman->table_exists($categorytable)) {
+            $categorytable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $categorytable->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
+            $categorytable->add_field('slug', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL);
+            $categorytable->add_field('icon', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, 'help-circle');
+            $categorytable->add_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $categorytable->add_field('visible', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+            $categorytable->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $categorytable->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $categorytable->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $categorytable->add_key('slug_uix', XMLDB_KEY_UNIQUE, ['slug']);
+            $dbman->create_table($categorytable);
+        }
+
+        $general = $DB->get_record('edukav_faq_categories', ['slug' => 'general']);
+        if (!$general) {
+            $now = time();
+            $generalid = $DB->insert_record('edukav_faq_categories', (object) [
+                'name' => get_string('category_general', 'local_edukav'),
+                'slug' => 'general',
+                'icon' => 'info',
+                'sortorder' => 0,
+                'visible' => 1,
+                'timecreated' => $now,
+                'timemodified' => $now,
+            ]);
+        } else {
+            $generalid = (int) $general->id;
+        }
+
+        $faqtable = new xmldb_table('edukav_faqs');
+        $categoryfield = new xmldb_field('categoryid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'id');
+        if (!$dbman->field_exists($faqtable, $categoryfield)) {
+            $dbman->add_field($faqtable, $categoryfield);
+        }
+        $DB->execute('UPDATE {edukav_faqs} SET categoryid = :categoryid WHERE categoryid IS NULL OR categoryid = 0',
+            ['categoryid' => $generalid]);
+        $categoryfield = new xmldb_field('categoryid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, 'id');
+        $dbman->change_field_notnull($faqtable, $categoryfield);
+
+        $sortfield = new xmldb_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'visible');
+        if (!$dbman->field_exists($faqtable, $sortfield)) {
+            $dbman->add_field($faqtable, $sortfield);
+        }
+
+        $categorykey = new xmldb_key('categoryid_fk', XMLDB_KEY_FOREIGN, ['categoryid'],
+            'edukav_faq_categories', ['id']);
+        if (!$dbman->find_key_name($faqtable, $categorykey)) {
+            $dbman->add_key($faqtable, $categorykey);
+        }
+        $categoryindex = new xmldb_index('categoryvisible_idx', XMLDB_INDEX_NOTUNIQUE,
+            ['categoryid', 'visible', 'sortorder']);
+        if (!$dbman->index_exists($faqtable, $categoryindex)) {
+            $dbman->add_index($faqtable, $categoryindex);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091511, 'local', 'edukav');
+    }
+
+    if ($oldversion < 2026091512) {
+        $faqtable = new xmldb_table('edukav_faqs');
+        $categoryindex = new xmldb_index('categoryid_fk', XMLDB_INDEX_NOTUNIQUE, ['categoryid']);
+        if (!$dbman->index_exists($faqtable, $categoryindex)) {
+            $dbman->add_index($faqtable, $categoryindex);
+        }
+        upgrade_plugin_savepoint(true, 2026091512, 'local', 'edukav');
+    }
+
+    if ($oldversion < 2026091513) {
+        $categorytable = new xmldb_table('edukav_faq_categories');
+        $iconfield = new xmldb_field('icon', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null,
+            'question-circle', 'slug');
+        $dbman->change_field_default($categorytable, $iconfield);
+
+        $iconmap = [
+            'user' => 'person',
+            'book-open' => 'book',
+            'file-text' => 'file-earmark-text',
+            'headphones' => 'headset',
+            'info' => 'info-circle',
+            'help-circle' => 'question-circle',
+        ];
+        foreach ($iconmap as $oldicon => $newicon) {
+            $DB->set_field('edukav_faq_categories', 'icon', $newicon, ['icon' => $oldicon]);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091513, 'local', 'edukav');
+    }
+
     return true;
 }

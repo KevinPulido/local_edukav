@@ -1,23 +1,47 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <XMLDB PATH="local/edukav/db"
-       VERSION="2026091501"
+       VERSION="2026091513"
        COMMENT="Tablas del plugin local edukav">
 
     <TABLES>
+
+        <!-- FAQ categories -->
+        <TABLE NAME="edukav_faq_categories" COMMENT="Categorias de preguntas frecuentes">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true"/>
+                <FIELD NAME="slug" TYPE="char" LENGTH="100" NOTNULL="true"/>
+                <FIELD NAME="icon" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="question-circle"/>
+                <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="visible" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="slug_uix" TYPE="unique" FIELDS="slug"/>
+            </KEYS>
+        </TABLE>
 
         <!-- FAQs -->
         <TABLE NAME="edukav_faqs" COMMENT="Preguntas frecuentes">
             <FIELDS>
             <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+            <FIELD NAME="categoryid" TYPE="int" LENGTH="10" NOTNULL="true"/>
             <FIELD NAME="question" TYPE="char" LENGTH="255" NOTNULL="true"/>
             <FIELD NAME="answer" TYPE="text" NOTNULL="true"/>
             <FIELD NAME="visible" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+            <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
             <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
             <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
             </FIELDS>
             <KEYS>
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="categoryid_fk" TYPE="foreign" FIELDS="categoryid" REFTABLE="edukav_faq_categories" REFFIELDS="id"/>
             </KEYS>
+            <INDEXES>
+                <INDEX NAME="categoryvisible_idx" UNIQUE="false" FIELDS="categoryid, visible, sortorder"/>
+            </INDEXES>
         </TABLE>
 
         <!-- Tutorials -->

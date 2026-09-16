@@ -4,80 +4,32 @@ namespace local_edukav\service;
 defined('MOODLE_INTERNAL') || die();
 
 use context_system;
+use local_edukav\repository\faq_categories_repository;
 use local_edukav\repository\faqs_repository;
-use required_capability_exception;
 
 class faqs_service {
-
-    /**
-     * Crear FAQ
-     * (público o con validaciones mínimas)
-     */
-    public static function create_faq(string $question, string $answer): int {
-        // Reglas de negocio básicas
-        if (empty(trim($question)) || empty(trim($answer))) {
-            throw new \invalid_parameter_exception('Pregunta y respuesta son obligatorias');
+    public static function save(\stdClass $data): int {
+        require_capability('moodle/site:config', context_system::instance());
+        $question = trim((string) ($data->question ?? ''));
+        $answer = trim((string) ($data->answer ?? ''));
+        $categoryid = (int) ($data->categoryid ?? 0);
+        if ($question === '' || $answer === '' || $categoryid <= 0) {
+            throw new \invalid_parameter_exception('Question, answer and category are required.');
         }
-
-        $data = (object)[
-            'question' => $question,
-            'answer'   => $answer,
-            'timecreated' => time(),
-            'timemodified' => time(),
-        ];
-
-        return faqs_repository::create(
-            $data->question,
-            $data->answer
-        );
+        faq_categories_repository::get_by_id($categoryid);
+        return faqs_repository::save((object) [
+            'id' => (int) ($data->id ?? 0),
+            'categoryid' => $categoryid,
+            'question' => clean_param($question, PARAM_TEXT),
+            'answer' => clean_param($answer, PARAM_TEXT),
+            'visible' => empty($data->visible) ? 0 : 1,
+            'sortorder' => (int) ($data->sortorder ?? 0),
+        ]);
     }
 
-    /**
-     * Editar FAQ
-     * (requiere permisos)
-     */
-    public static function update_faq(int $id, string $question, string $answer): void {
-        $context = context_system::instance();
-
-        if (!has_capability('moodle/site:config', $context)) {
-            throw new required_capability_exception(
-                $context,
-                'moodle/site:config',
-                'nopermissions',
-                ''
-            );
-        }
-
-        if (empty(trim($question)) || empty(trim($answer))) {
-            throw new \invalid_parameter_exception('Pregunta y respuesta son obligatorias');
-        }
-
-        $data = (object)[
-            'id' => $id,
-            'question' => $question,
-            'answer' => $answer,
-            'timemodified' => time(),
-        ];
-
-        faqs_repository::update($data);
-    }
-
-    /**
-     * Eliminar FAQ
-     * (requiere permisos)
-     */
-    public static function delete_faq(int $id): void {
-        $context = context_system::instance();
-
-        if (!has_capability('moodle/site:config', $context)) {
-            throw new required_capability_exception(
-                $context,
-                'moodle/site:config',
-                'nopermissions',
-                ''
-            );
-        }
-
+    public static function delete(int $id): void {
+        require_capability('moodle/site:config', context_system::instance());
+        faqs_repository::get_by_id($id);
         faqs_repository::delete($id);
     }
 }
