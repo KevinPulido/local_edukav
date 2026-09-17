@@ -80,7 +80,7 @@ class frontpage_repository {
      */
     public static function get_visible_course_ids(
         array $selectedids = [],
-        int $limit = 6,
+        int $limit = 3,
         int $offset = 0,
         int $categoryid = 0,
         string $level = '',

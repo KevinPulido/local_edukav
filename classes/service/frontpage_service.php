@@ -21,7 +21,7 @@ use moodle_url;
 class frontpage_service {
 
     /** Maximum number of featured courses accepted by the frontpage. */
-    public const FEATURED_COURSE_LIMIT = 6;
+    public const FEATURED_COURSE_LIMIT = 3;
 
     /** Course levels supported by the Edukav course format. */
     private const CATALOGUE_LEVELS = ['beginner', 'intermediate', 'advanced'];
