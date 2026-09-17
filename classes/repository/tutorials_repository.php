@@ -7,7 +7,8 @@ class tutorials_repository {
 
     public static function get_all(): array {
         global $DB;
-        return $DB->get_records('edukav_tutorials', null, 'timecreated DESC');
+        $fields = 'id, title, description, url, timecreated, timemodified';
+        return $DB->get_records('edukav_tutorials', null, 'timecreated DESC, id DESC', $fields);
     }
 
     public static function get_by_id(int $id) {
@@ -15,25 +16,16 @@ class tutorials_repository {
         return $DB->get_record('edukav_tutorials', ['id' => $id], '*', MUST_EXIST);
     }
 
-    public static function create(string $title, string $description, string $url): int {
+    public static function save(\stdClass $record): int {
         global $DB;
-
-        $record = new \stdClass();
-        $record->title = $title;
-        $record->description = $description;
-        $record->url = $url;
-        $record->timecreated = time();
         $record->timemodified = time();
-
-        return $DB->insert_record('edukav_tutorials', $record);
-    }
-
-    public static function update(\stdClass $record): bool {
-        global $DB;
-
-        debugging('ID recibido: ' . $record->id);
-
-        return $DB->update_record('edukav_tutorials', $record);
+        if (!empty($record->id)) {
+            $DB->update_record('edukav_tutorials', $record);
+            return (int) $record->id;
+        }
+        unset($record->id);
+        $record->timecreated = $record->timemodified;
+        return (int) $DB->insert_record('edukav_tutorials', $record);
     }
 
     public static function delete(int $id): bool {

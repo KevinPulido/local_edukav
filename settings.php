@@ -27,6 +27,15 @@ if ($hassiteconfig) {
     $ADMIN->add(
         'local_edukav_settings',
         new admin_externalpage(
+            'local_edukav_tutorials',
+            get_string('managetutorials', 'local_edukav'),
+            new moodle_url('/local/edukav/tutorial/index.php'),
+            'moodle/site:config'
+        )
+    );
+    $ADMIN->add(
+        'local_edukav_settings',
+        new admin_externalpage(
             'local_edukav_partners',
             get_string('managepartners', 'local_edukav'),
             new moodle_url('/local/edukav/partners.php'),
