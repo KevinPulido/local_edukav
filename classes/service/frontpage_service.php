@@ -23,6 +23,9 @@ class frontpage_service {
     /** Maximum number of featured courses accepted by the frontpage. */
     public const FEATURED_COURSE_LIMIT = 6;
 
+    /** Course levels supported by the Edukav course format. */
+    private const CATALOGUE_LEVELS = ['beginner', 'intermediate', 'advanced'];
+
     /**
      * Return cached public statistics.
      *
@@ -77,24 +80,84 @@ class frontpage_service {
      * @param int $page
      * @param int $perpage
      * @param int $categoryid
+     * @param string $level
+     * @param string $search
      * @return array
      */
-    public static function get_catalogue_data(int $page = 0, int $perpage = 12, int $categoryid = 0): array {
+    public static function get_catalogue_data(
+        int $page = 0,
+        int $perpage = 12,
+        int $categoryid = 0,
+        string $level = '',
+        string $search = ''
+    ): array {
         $page = max(0, $page);
         $perpage = max(1, min(48, $perpage));
         $categoryid = max(0, $categoryid);
-        $total = frontpage_repository::count_visible_courses($categoryid);
+        $level = in_array($level, self::CATALOGUE_LEVELS, true) ? $level : '';
+        $search = trim(\core_text::substr($search, 0, 100));
+        $total = frontpage_repository::count_visible_courses($categoryid, $level, $search);
+        $allcoursetotal = frontpage_repository::count_visible_courses();
         $courseids = frontpage_repository::get_visible_course_ids(
             [],
             $perpage,
             $page * $perpage,
-            $categoryid
+            $categoryid,
+            $level,
+            $search
         );
+        $categories = self::export_categories(frontpage_repository::get_visible_categories());
+        foreach ($categories as &$category) {
+            $category['isactive'] = $category['id'] === $categoryid;
+            $category['url'] = (new moodle_url('/local/edukav/catalog.php', array_filter([
+                'categoryid' => $category['id'],
+                'level' => $level,
+                'q' => $search,
+            ], static fn($value): bool => $value !== '')))->out(false);
+        }
+        unset($category);
+
+        $commonparams = array_filter([
+            'categoryid' => $categoryid > 0 ? $categoryid : '',
+            'q' => $search,
+        ], static fn($value): bool => $value !== '');
+        $levelcounts = frontpage_repository::get_visible_course_level_counts($categoryid, $search);
+        $levels = [];
+        foreach (self::CATALOGUE_LEVELS as $levelvalue) {
+            $levels[] = [
+                'value' => $levelvalue,
+                'label' => get_string('level:' . $levelvalue, 'format_edukav'),
+                'count' => $levelcounts[$levelvalue] ?? 0,
+                'isactive' => $level === $levelvalue,
+                'url' => (new moodle_url('/local/edukav/catalog.php',
+                    $commonparams + ['level' => $levelvalue]))->out(false),
+            ];
+        }
+
+        $allcategoryparams = array_filter([
+            'level' => $level,
+            'q' => $search,
+        ], static fn($value): bool => $value !== '');
 
         return [
             'courses' => self::export_course_cards($courseids),
             'hascourses' => !empty($courseids),
             'totalcourses' => $total,
+            'allcoursetotal' => $allcoursetotal,
+            'categories' => $categories,
+            'hascategories' => !empty($categories),
+            'allcategoriesactive' => $categoryid === 0,
+            'allcategoriesurl' => (new moodle_url('/local/edukav/catalog.php', $allcategoryparams))->out(false),
+            'levels' => $levels,
+            'alllevelsactive' => $level === '',
+            'alllevelsurl' => (new moodle_url('/local/edukav/catalog.php', $commonparams))->out(false),
+            'alllevelscount' => frontpage_repository::count_visible_courses($categoryid, '', $search),
+            'currentcategoryid' => $categoryid,
+            'currentlevel' => $level,
+            'searchquery' => $search,
+            'filtersactive' => $categoryid > 0 || $level !== '' || $search !== '',
+            'searchurl' => (new moodle_url('/local/edukav/catalog.php'))->out(false),
+            'clearfiltersurl' => (new moodle_url('/local/edukav/catalog.php'))->out(false),
             'page' => $page,
             'perpage' => $perpage,
             'categoryid' => $categoryid,

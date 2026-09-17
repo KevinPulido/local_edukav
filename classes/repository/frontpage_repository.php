@@ -74,26 +74,21 @@ class frontpage_repository {
      * @param int $limit
      * @param int $offset
      * @param int $categoryid
+     * @param string $level
+     * @param string $search
      * @return int[]
      */
     public static function get_visible_course_ids(
         array $selectedids = [],
         int $limit = 6,
         int $offset = 0,
-        int $categoryid = 0
+        int $categoryid = 0,
+        string $level = '',
+        string $search = ''
     ): array {
         global $DB;
 
-        $params = ['siteid' => SITEID];
-        $where = [
-            'c.id <> :siteid',
-            'c.visible = 1',
-            'cc.visible = 1',
-        ];
-        if ($categoryid > 0) {
-            $where[] = 'c.category = :categoryid';
-            $params['categoryid'] = $categoryid;
-        }
+        [$joins, $where, $params] = self::get_catalogue_filter_sql($categoryid, $level, $search);
 
         $order = 'c.sortorder ASC, c.id ASC';
         if ($selectedids) {
@@ -111,7 +106,7 @@ class frontpage_repository {
 
         $sql = "SELECT c.id
                   FROM {course} c
-                  JOIN {course_categories} cc ON cc.id = c.category
+                  {$joins}
                  WHERE " . implode(' AND ', $where) . "
               ORDER BY {$order}";
 
@@ -122,27 +117,68 @@ class frontpage_repository {
      * Count visible courses, optionally within a category.
      *
      * @param int $categoryid
+     * @param string $level
+     * @param string $search
      * @return int
      */
-    public static function count_visible_courses(int $categoryid = 0): int {
+    public static function count_visible_courses(
+        int $categoryid = 0,
+        string $level = '',
+        string $search = ''
+    ): int {
         global $DB;
 
-        $params = ['siteid' => SITEID];
-        $categorysql = '';
-        if ($categoryid > 0) {
-            $categorysql = ' AND c.category = :categoryid';
-            $params['categoryid'] = $categoryid;
-        }
+        [$joins, $where, $params] = self::get_catalogue_filter_sql($categoryid, $level, $search);
 
         return (int)$DB->count_records_sql(
             "SELECT COUNT(c.id)
                FROM {course} c
-               JOIN {course_categories} cc ON cc.id = c.category
-              WHERE c.id <> :siteid
-                AND c.visible = 1
-                AND cc.visible = 1{$categorysql}",
+               {$joins}
+              WHERE " . implode(' AND ', $where),
             $params
         );
+    }
+
+    /**
+     * Return the number of visible catalogue courses for each supported level.
+     *
+     * The level filter itself is intentionally omitted so every option keeps its
+     * complete count while category and search filters remain applied.
+     *
+     * @param int $categoryid
+     * @param string $search
+     * @return array<string, int>
+     */
+    public static function get_visible_course_level_counts(int $categoryid = 0, string $search = ''): array {
+        global $DB;
+
+        [$joins, $where, $params] = self::get_catalogue_filter_sql($categoryid, '', $search);
+        $joins .= " JOIN {course_format_options} cfolevelcount
+                         ON cfolevelcount.courseid = c.id
+                        AND cfolevelcount.format = :countformat
+                        AND cfolevelcount.sectionid = 0
+                        AND cfolevelcount.name = :countname";
+        $params['countformat'] = 'edukav';
+        $params['countname'] = 'level';
+        [$levelsql, $levelparams] = $DB->get_in_or_equal(
+            ['beginner', 'intermediate', 'advanced'],
+            SQL_PARAMS_NAMED,
+            'countlevel'
+        );
+        $params += $levelparams;
+        $where[] = "cfolevelcount.value {$levelsql}";
+
+        $sql = "SELECT cfolevelcount.value AS level, COUNT(DISTINCT c.id) AS coursecount
+                  FROM {course} c
+                  {$joins}
+                 WHERE " . implode(' AND ', $where) . "
+              GROUP BY cfolevelcount.value";
+
+        $counts = [];
+        foreach ($DB->get_records_sql($sql, $params) as $record) {
+            $counts[$record->level] = (int)$record->coursecount;
+        }
+        return $counts;
     }
 
     /**
@@ -180,5 +216,53 @@ class frontpage_repository {
               ORDER BY {$order}";
 
         return array_values($DB->get_records_sql($sql, $params, 0, $limit));
+    }
+
+    /**
+     * Build portable SQL fragments shared by catalogue queries.
+     *
+     * @param int $categoryid
+     * @param string $level
+     * @param string $search
+     * @return array{0:string,1:string[],2:array}
+     */
+    private static function get_catalogue_filter_sql(int $categoryid, string $level, string $search): array {
+        global $DB;
+
+        $joins = 'JOIN {course_categories} cc ON cc.id = c.category';
+        $params = ['siteid' => SITEID];
+        $where = [
+            'c.id <> :siteid',
+            'c.visible = 1',
+            'cc.visible = 1',
+        ];
+
+        if ($categoryid > 0) {
+            $where[] = 'c.category = :categoryid';
+            $params['categoryid'] = $categoryid;
+        }
+
+        if ($level !== '') {
+            $joins .= " JOIN {course_format_options} cfolevel
+                             ON cfolevel.courseid = c.id
+                            AND cfolevel.format = :levelformat
+                            AND cfolevel.sectionid = 0
+                            AND cfolevel.name = :leveloption";
+            $where[] = 'cfolevel.value = :level';
+            $params['levelformat'] = 'edukav';
+            $params['leveloption'] = 'level';
+            $params['level'] = $level;
+        }
+
+        $search = trim($search);
+        if ($search !== '') {
+            $where[] = '(' . $DB->sql_like('c.fullname', ':searchfullname', false) .
+                ' OR ' . $DB->sql_like('c.shortname', ':searchshortname', false) . ')';
+            $searchvalue = '%' . $DB->sql_like_escape($search) . '%';
+            $params['searchfullname'] = $searchvalue;
+            $params['searchshortname'] = $searchvalue;
+        }
+
+        return [$joins, $where, $params];
     }
 }
