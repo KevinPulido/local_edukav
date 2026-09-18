@@ -55,11 +55,20 @@ function local_edukav_pluginfile(
         return true;
     }
 
-    if ($context->contextlevel !== CONTEXT_SYSTEM || $filearea !== 'partner_logo') {
+    $categoryareas = [
+        \local_edukav\service\category_styles_service::FILEAREA_CATEGORY_IMAGE,
+        \local_edukav\service\category_styles_service::FILEAREA_CATEGORY_ICON,
+    ];
+    $systemareas = array_merge(['partner_logo'], $categoryareas);
+    if ($context->contextlevel !== CONTEXT_SYSTEM || !in_array($filearea, $systemareas, true)) {
         return false;
     }
 
     $itemid = (int)array_shift($args);
+    if (in_array($filearea, $categoryareas, true) &&
+            !\local_edukav\repository\category_styles_repository::get_by_id($itemid)) {
+        return false;
+    }
     $filename = array_pop($args);
     $filepath = '/' . implode('/', $args) . '/';
     if ($filepath === '//') {

@@ -7,13 +7,58 @@ class tutorials_repository {
 
     public static function get_all(): array {
         global $DB;
-        $fields = 'id, title, description, url, timecreated, timemodified';
-        return $DB->get_records('edukav_tutorials', null, 'timecreated DESC, id DESC', $fields);
+
+        $sql = "SELECT t.id,
+                       t.categoryid,
+                       t.title,
+                       t.description,
+                       t.url,
+                       t.visible,
+                       t.sortorder,
+                       t.timecreated,
+                       t.timemodified,
+                       c.name AS categoryname,
+                       c.icon AS categoryicon
+                  FROM {edukav_tutorials} t
+                  JOIN {edukav_tutorial_categories} c
+                    ON c.id = t.categoryid
+              ORDER BY c.sortorder ASC, c.name ASC, t.sortorder ASC, t.id ASC";
+
+        return $DB->get_records_sql($sql);
+    }
+
+    public static function get_visible(): array {
+        global $DB;
+
+        $sql = "SELECT t.id,
+                       t.categoryid,
+                       t.title,
+                       t.description,
+                       t.url,
+                       t.visible,
+                       t.sortorder,
+                       t.timecreated,
+                       t.timemodified,
+                       c.name AS categoryname,
+                       c.icon AS categoryicon
+                  FROM {edukav_tutorials} t
+                  JOIN {edukav_tutorial_categories} c
+                    ON c.id = t.categoryid
+                 WHERE t.visible = :tutorialvisible
+                       AND c.visible = :categoryvisible
+              ORDER BY c.sortorder ASC, c.name ASC, t.sortorder ASC, t.id ASC";
+        $params = [
+            'tutorialvisible' => 1,
+            'categoryvisible' => 1,
+        ];
+
+        return $DB->get_records_sql($sql, $params);
     }
 
     public static function get_by_id(int $id) {
         global $DB;
-        return $DB->get_record('edukav_tutorials', ['id' => $id], '*', MUST_EXIST);
+        $fields = 'id, categoryid, title, description, url, visible, sortorder, timecreated, timemodified';
+        return $DB->get_record('edukav_tutorials', ['id' => $id], $fields, MUST_EXIST);
     }
 
     public static function save(\stdClass $record): int {

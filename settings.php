@@ -27,9 +27,27 @@ if ($hassiteconfig) {
     $ADMIN->add(
         'local_edukav_settings',
         new admin_externalpage(
+            'local_edukav_category_styles',
+            get_string('managecategorystyles', 'local_edukav'),
+            new moodle_url('/local/edukav/category/index.php'),
+            'moodle/site:config'
+        )
+    );
+    $ADMIN->add(
+        'local_edukav_settings',
+        new admin_externalpage(
             'local_edukav_tutorials',
             get_string('managetutorials', 'local_edukav'),
             new moodle_url('/local/edukav/tutorial/index.php'),
+            'moodle/site:config'
+        )
+    );
+    $ADMIN->add(
+        'local_edukav_settings',
+        new admin_externalpage(
+            'local_edukav_tutorial_categories',
+            get_string('managetutorialcategories', 'local_edukav'),
+            new moodle_url('/local/edukav/tutorial/categories.php'),
             'moodle/site:config'
         )
     );

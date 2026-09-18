@@ -44,6 +44,11 @@ echo $OUTPUT->single_button(
     'get',
     ['type' => 'primary']
 );
+echo ' ' . html_writer::link(
+    new moodle_url('/local/edukav/tutorial/categories.php'),
+    get_string('managetutorialcategories', 'local_edukav'),
+    ['class' => 'btn btn-secondary']
+);
 echo html_writer::end_div();
 
 $tutorials = tutorials_repository::get_all();
@@ -54,8 +59,10 @@ if (!$tutorials) {
     $table = new html_table();
     $table->head = [
         get_string('tutorialtitle', 'local_edukav'),
-        get_string('tutorialdescription', 'local_edukav'),
+        get_string('tutorialcategory', 'local_edukav'),
         get_string('tutorialurl', 'local_edukav'),
+        get_string('status', 'local_edukav'),
+        get_string('tutorialsortorder', 'local_edukav'),
         get_string('actions', 'local_edukav'),
     ];
     foreach ($tutorials as $tutorial) {
@@ -69,8 +76,10 @@ if (!$tutorials) {
         ]);
         $table->data[] = [
             format_string($tutorial->title),
-            shorten_text(format_text($tutorial->description, FORMAT_PLAIN), 120),
+            format_string($tutorial->categoryname),
             $videourl,
+            $tutorial->visible ? get_string('visible', 'local_edukav') : get_string('hidden', 'local_edukav'),
+            (int) $tutorial->sortorder,
             $actions,
         ];
     }

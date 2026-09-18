@@ -3,6 +3,7 @@ require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir . '/formslib.php');
 
 use local_edukav\form\tutorial_form;
+use local_edukav\repository\tutorial_categories_repository;
 use local_edukav\repository\tutorials_repository;
 use local_edukav\service\tutorials_service;
 
@@ -20,7 +21,14 @@ $title = $id ? get_string('edittutorial', 'local_edukav') : get_string('addtutor
 $PAGE->set_title($title);
 $PAGE->set_heading($title);
 
-$form = new tutorial_form($url);
+$categories = tutorial_categories_repository::get_options();
+if (!$categories) {
+    redirect(
+        new moodle_url('/local/edukav/tutorial/category_edit.php'),
+        get_string('createtutorialcategoryfirst', 'local_edukav')
+    );
+}
+$form = new tutorial_form($url, ['categories' => $categories]);
 if ($id) {
     $form->set_data(tutorials_repository::get_by_id($id));
 }

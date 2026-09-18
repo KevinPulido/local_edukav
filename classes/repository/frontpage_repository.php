@@ -208,11 +208,30 @@ class frontpage_repository {
             $order = 'CASE cc.id ' . implode(' ', $cases) . ' ELSE ' . count($selectedids) . ' END, cc.sortorder ASC';
         }
 
-        $sql = "SELECT cc.id, cc.name, cc.description, cc.descriptionformat, COUNT(c.id) AS coursecount
+        $sql = "SELECT cc.id,
+                       cc.name,
+                       cc.description,
+                       cc.descriptionformat,
+                       cs.id AS styleid,
+                       cs.displaytype,
+                       cs.icontype,
+                       cs.icon,
+                       cs.imagealt,
+                       COUNT(c.id) AS coursecount
                   FROM {course_categories} cc
                   JOIN {course} c ON c.category = cc.id
+             LEFT JOIN {edukav_category_styles} cs ON cs.categoryid = cc.id
                  WHERE " . implode(' AND ', $where) . "
-              GROUP BY cc.id, cc.name, cc.description, cc.descriptionformat, cc.sortorder
+              GROUP BY cc.id,
+                       cc.name,
+                       cc.description,
+                       cc.descriptionformat,
+                       cc.sortorder,
+                       cs.id,
+                       cs.displaytype,
+                       cs.icontype,
+                       cs.icon,
+                       cs.imagealt
               ORDER BY {$order}";
 
         return array_values($DB->get_records_sql($sql, $params, 0, $limit));

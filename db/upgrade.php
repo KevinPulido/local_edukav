@@ -196,5 +196,104 @@ function xmldb_local_edukav_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091513, 'local', 'edukav');
     }
 
+    if ($oldversion < 2026091701) {
+        $table = new xmldb_table('edukav_category_styles');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $table->add_field('categoryid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('displaytype', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'icon');
+            $table->add_field('icon', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, 'bi-book');
+            $table->add_field('imagealt', XMLDB_TYPE_CHAR, '255', null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('categoryid_fk', XMLDB_KEY_FOREIGN_UNIQUE, ['categoryid'],
+                'course_categories', ['id']);
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091701, 'local', 'edukav');
+    }
+
+    if ($oldversion < 2026091702) {
+        $table = new xmldb_table('edukav_category_styles');
+        $field = new xmldb_field('icontype', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null,
+            'bootstrap', 'displaytype');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091702, 'local', 'edukav');
+    }
+
+    if ($oldversion < 2026091800) {
+        $categorytable = new xmldb_table('edukav_tutorial_categories');
+        if (!$dbman->table_exists($categorytable)) {
+            $categorytable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $categorytable->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
+            $categorytable->add_field('slug', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL);
+            $categorytable->add_field('icon', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, 'camera-video');
+            $categorytable->add_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $categorytable->add_field('visible', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+            $categorytable->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $categorytable->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $categorytable->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $categorytable->add_key('slug_uix', XMLDB_KEY_UNIQUE, ['slug']);
+            $dbman->create_table($categorytable);
+        }
+
+        $general = $DB->get_record('edukav_tutorial_categories', ['slug' => 'general']);
+        if (!$general) {
+            $now = time();
+            $generalid = $DB->insert_record('edukav_tutorial_categories', (object) [
+                'name' => get_string('category_general', 'local_edukav'),
+                'slug' => 'general',
+                'icon' => 'camera-video',
+                'sortorder' => 0,
+                'visible' => 1,
+                'timecreated' => $now,
+                'timemodified' => $now,
+            ]);
+        } else {
+            $generalid = (int) $general->id;
+        }
+
+        $tutorialtable = new xmldb_table('edukav_tutorials');
+        $categoryfield = new xmldb_field('categoryid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'id');
+        if (!$dbman->field_exists($tutorialtable, $categoryfield)) {
+            $dbman->add_field($tutorialtable, $categoryfield);
+        }
+        $DB->execute(
+            'UPDATE {edukav_tutorials} SET categoryid = :categoryid WHERE categoryid IS NULL OR categoryid = 0',
+            ['categoryid' => $generalid]
+        );
+        $categoryfield = new xmldb_field('categoryid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, 'id');
+        $dbman->change_field_notnull($tutorialtable, $categoryfield);
+
+        $visiblefield = new xmldb_field('visible', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'url');
+        if (!$dbman->field_exists($tutorialtable, $visiblefield)) {
+            $dbman->add_field($tutorialtable, $visiblefield);
+        }
+        $sortfield = new xmldb_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'visible');
+        if (!$dbman->field_exists($tutorialtable, $sortfield)) {
+            $dbman->add_field($tutorialtable, $sortfield);
+        }
+
+        $categorykey = new xmldb_key('categoryid_fk', XMLDB_KEY_FOREIGN, ['categoryid'],
+            'edukav_tutorial_categories', ['id']);
+        if (!$dbman->find_key_name($tutorialtable, $categorykey)) {
+            $dbman->add_key($tutorialtable, $categorykey);
+        }
+        $categoryindex = new xmldb_index('categoryvisible_idx', XMLDB_INDEX_NOTUNIQUE,
+            ['categoryid', 'visible', 'sortorder']);
+        if (!$dbman->index_exists($tutorialtable, $categoryindex)) {
+            $dbman->add_index($tutorialtable, $categoryindex);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091800, 'local', 'edukav');
+    }
+
     return true;
 }

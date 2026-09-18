@@ -24,7 +24,7 @@ $observers = [
     ],
     [
         'eventname' => '\\core\\event\\course_category_deleted',
-        'callback' => '\\local_edukav\\observer::invalidate_frontpage_cache',
+        'callback' => '\\local_edukav\\observer::course_category_deleted',
     ],
     [
         'eventname' => '\\core\\event\\user_enrolment_created',

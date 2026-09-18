@@ -8,6 +8,7 @@
 
 require_once(__DIR__ . '/../../config.php');
 
+use local_edukav\repository\tutorial_categories_repository;
 use local_edukav\service\tutorials_service;
 
 $context = context_system::instance();
@@ -22,12 +23,19 @@ $PAGE->set_heading(get_string('tutorialsnav', 'theme_edukav'));
 
 $config = get_config('theme_edukav');
 $tutorials = tutorials_service::get_tutorials();
+$categories = tutorial_categories_repository::get_visible();
 $title = trim((string)($config->title_tutorial ?? ''));
 $description = trim((string)($config->text_tutorial ?? ''));
 
 $templatecontext = [
     'tutorials' => array_values($tutorials),
+    'categories' => array_values($categories),
     'tutorialcount' => count($tutorials),
+    'tutorialcountlabel' => get_string(
+        count($tutorials) === 1 ? 'tutorial_available' : 'tutorials_available',
+        'theme_edukav',
+        count($tutorials)
+    ),
     'title_tutorial' => $title !== '' ? $title : get_string('tutorial_page_title', 'theme_edukav'),
     'text_tutorial' => $description !== '' ? $description : get_string('tutorial_page_description', 'theme_edukav'),
 ];

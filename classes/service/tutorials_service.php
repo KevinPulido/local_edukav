@@ -4,6 +4,7 @@ namespace local_edukav\service;
 defined('MOODLE_INTERNAL') || die();
 
 use context_system;
+use local_edukav\repository\tutorial_categories_repository;
 use local_edukav\repository\tutorials_repository;
 
 class tutorials_service {
@@ -14,9 +15,11 @@ class tutorials_service {
         $title = trim((string)($data->title ?? ''));
         $description = trim((string)($data->description ?? ''));
         $url = trim((string)($data->url ?? ''));
-        if ($title === '' || $description === '' || $url === '') {
-            throw new \invalid_parameter_exception('Title, description and URL are required.');
+        $categoryid = (int) ($data->categoryid ?? 0);
+        if ($title === '' || $description === '' || $url === '' || $categoryid <= 0) {
+            throw new \invalid_parameter_exception('Title, description, URL and category are required.');
         }
+        tutorial_categories_repository::get_by_id($categoryid);
 
         global $CFG;
         require_once($CFG->dirroot . '/local/edukav/lib.php');
@@ -27,9 +30,12 @@ class tutorials_service {
 
         return tutorials_repository::save((object)[
             'id' => (int)($data->id ?? 0),
+            'categoryid' => $categoryid,
             'title' => clean_param($title, PARAM_TEXT),
             'description' => clean_param($description, PARAM_TEXT),
             'url' => 'https://www.youtube.com/embed/' . rawurlencode($videoid),
+            'visible' => empty($data->visible) ? 0 : 1,
+            'sortorder' => (int) ($data->sortorder ?? 0),
         ]);
     }
 
@@ -43,7 +49,7 @@ class tutorials_service {
         global $CFG;
         require_once($CFG->dirroot . '/local/edukav/lib.php');
 
-        $tutorials = tutorials_repository::get_all();
+        $tutorials = tutorials_repository::get_visible();
 
         foreach ($tutorials as $tutorial) {
             $tutorial->video_id =

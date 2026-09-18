@@ -231,16 +231,27 @@ class frontpage_service {
         $categories = [];
         foreach (array_values($records) as $position => $record) {
             $context = context_coursecat::instance((int)$record->id);
+            $name = format_string($record->name, true, ['context' => $context]);
+            $defaulticon = $icons[$position % count($icons)];
+            $configuredicon = trim((string)($record->icon ?? ''));
+            $imageurl = category_styles_service::get_image_url((int)($record->styleid ?? 0));
+            $iconimageurl = category_styles_service::get_icon_image_url((int)($record->styleid ?? 0));
+            $hascustomicon = ($record->icontype ?? 'bootstrap') === 'image' && $iconimageurl !== '';
             $categories[] = [
                 'id' => (int)$record->id,
-                'name' => format_string($record->name, true, ['context' => $context]),
+                'name' => $name,
                 'description' => format_text($record->description, $record->descriptionformat, [
                     'context' => $context,
                     'filter' => true,
                     'para' => false,
                 ]),
                 'coursecount' => (int)$record->coursecount,
-                'icon' => $icons[$position % count($icons)],
+                'icon' => $configuredicon !== '' ? $configuredicon : $defaulticon,
+                'hascustomicon' => $hascustomicon,
+                'iconimageurl' => $iconimageurl,
+                'hasimage' => $imageurl !== '',
+                'imageurl' => $imageurl,
+                'imagealt' => trim((string)($record->imagealt ?? '')) ?: $name,
                 'url' => (new moodle_url('/local/edukav/catalog.php', [
                     'categoryid' => (int)$record->id,
                 ]))->out(false),
